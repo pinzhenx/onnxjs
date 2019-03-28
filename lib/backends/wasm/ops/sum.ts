@@ -16,7 +16,8 @@ export class WasmSum extends Sum {
     }
     WasmBinding.getInstance().ccall(
         '_sum_f32', [inputs.length, 'int32'], [size, 'int32'], [y.floatData, 'float32ptr', 'inout'], ...input);
-
+    // console.log(`Sum ${y.dims}`);
+    // console.log(y.data);
     return [y];
   }
 

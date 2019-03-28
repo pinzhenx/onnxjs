@@ -28,7 +28,8 @@ export class WasmGemm extends Gemm {
         [this.transB ? b.dims[0] : b.dims[1], 'int32'], [this.transA ? a.dims[0] : a.dims[1], 'int32'],
         [this.alpha, 'float32'], [a.floatData, 'float32ptr'], [b.floatData, 'float32ptr'], [this.beta, 'float32'],
         [y.floatData, 'float32ptr', 'inout']);
-
+    // console.log(`Gemm ${y.dims}`);
+    // console.log(y.data);
     return [y];
   }
 

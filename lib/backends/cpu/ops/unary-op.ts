@@ -19,6 +19,8 @@ export class CpuUnaryOp extends UnaryOp {
     // tslint:disable-next-line:max-line-length
     // https://github.com/TypeStrong/ts-loader#getcustomtransformers-----before-transformerfactory-after-transformerfactory--
     const output = unaryOp(inputs[0], this.func, this.attributes, this.resultType);
+    // console.log(`Unary ${output.dims}`);
+    // console.log(output.data);
     return [output];
   }
 }

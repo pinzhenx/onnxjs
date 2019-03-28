@@ -37,6 +37,8 @@ export class WasmConv extends Conv {
           [w.dims, 'int32ptr'], [y.floatData, 'float32ptr', 'out'], [y.dims, 'int32ptr'],
           [b ? b.floatData : null, 'float32ptr'], [this.dilations, 'int32ptr'], [this.group, 'int32'],
           [this.pads, 'int32ptr'], [this.strides, 'int32ptr']);
+      // console.log(`Conv ${y.dims}`);
+      // console.log(y.data);
       return [y];
     }
 
@@ -88,6 +90,8 @@ export class WasmConv extends Conv {
       }
 
       await Promise.all(workerTasks);
+      // console.log(`Conv ${y.dims}`);
+      // console.log(y.data);
       return [y];
     }
   }

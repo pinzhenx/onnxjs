@@ -16,7 +16,8 @@ export class WasmSoftmax extends Softmax {
     const y = new Tensor(x.dims, x.type);
     WasmBinding.getInstance().ccall(
         '_softmax_f32', [x.floatData, 'float32ptr'], [y.floatData, 'float32ptr', 'out'], [N, 'int32'], [D, 'int32']);
-
+    // console.log(`Softmax ${y.dims}`);
+    // console.log(y.data);
     return [y];
   }
 

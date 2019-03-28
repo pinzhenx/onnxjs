@@ -27,6 +27,8 @@ export class WasmBatchNormalization extends BatchNormalization {
         [x.dims[0], 'int32'], [x.dims[1], 'int32'], [channelSize, 'int32'], [scale.floatData, 'float32ptr'],
         [b.floatData, 'float32ptr'], [mean.floatData, 'float32ptr'], [variance.floatData, 'float32ptr'],
         [this.epsilon, 'float32']);
+    // console.log(`BatchNorm ${y.dims}`);
+    // console.log(y.data);
 
     return [y];
   }
