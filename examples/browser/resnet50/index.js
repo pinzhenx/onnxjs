@@ -16,7 +16,7 @@ async function runExample() {
   });
 
   // Load an ONNX model. This model is Resnet50 that takes a 1*3*224*224 image and classifies it.
-  await session.loadModel("https://github.com/Microsoft/onnxjs-demo/raw/data/data/examples/models/resnet50_8.onnx");
+  await session.loadModel("./resnet50_8.onnx");
 
   // Load image.
   const imageLoader = new ImageLoader(imageSize, imageSize);
