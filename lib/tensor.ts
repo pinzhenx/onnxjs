@@ -156,7 +156,6 @@ export class Tensor {
 
     this.dims = Array.from(dims);
     this.size = ShapeUtil.validateDimsAndCalcSize(dims);
-
     const size = this.size;
     const empty = (dataProvider === undefined && asyncDataProvider === undefined && cache === undefined);
 
@@ -186,24 +185,29 @@ export class Tensor {
         const buf = new ArrayBuffer(size * sizeof(type));
         this.cache = createView(buf, type);
       }
-      const nhwcBuf = new ArrayBuffer(size * sizeof(type));
-      this.nhwcCache = createView(nhwcBuf, type);
+      if (this.dims.length === 4) {
+        const nhwcBuf = new ArrayBuffer(size * sizeof(type));
+        this.nhwcCache = createView(nhwcBuf, type);
+      } else {
+        this.nhwcCache = this.cache!;
+      }
     }
   }
 
-
-  toNHWC() {  // NCHW -> NHWC, ONNX -> WebNN
+  toNHWC(pseudo = false) {  // NCHW -> NHWC, ONNX -> WebNN
     if (this.format === 'NCHW' && this.dims.length === 4) {
       const [N, C, H, W] = Array.from(this.dims);
       this.dims = [N, H, W, C];
 
-      const nchwData = this.cache!;
-      const nhwcData = this.nhwcCache;
-      for (let n = 0; n < N; ++n){
-        for (let c = 0; c < C; ++c){
-          for (let h = 0; h < H; ++h){
-            for (let w = 0; w < W; ++w){
-              nhwcData[n*H*W*C + h*W*C + w*C + c] = nchwData[n*C*H*W + c*H*W + h*W + w];
+      if (!pseudo) {
+        const nchwData = this.cache!;
+        const nhwcData = this.nhwcCache;
+        for (let n = 0; n < N; ++n) {
+          for (let c = 0; c < C; ++c) {
+            for (let h = 0; h < H; ++h) {
+              for (let w = 0; w < W; ++w) {
+                nhwcData[n*H*W*C + h*W*C + w*C + c] = nchwData[n*C*H*W + c*H*W + h*W + w];
+              }
             }
           }
         }
@@ -213,18 +217,20 @@ export class Tensor {
     return this;
   }
 
-  toNCHW() {  // NHWC -> NCHW, WebNN -> ONNX
+  toNCHW(pseudo = false) {  // NHWC -> NCHW, WebNN -> ONNX
     if (this.format === 'NHWC' && this.dims.length === 4) {
       const [N, H, W, C] = Array.from(this.dims);
       this.dims = [N, C, H, W];
 
-      const nchwData = this.cache!;
-      const nhwcData = this.nhwcCache;
-      for (let n = 0; n < N; ++n) {
-        for (let c = 0; c < C; ++c) {
-          for (let h = 0; h < H; ++h) {
-            for (let w = 0; w < W; ++w) {
-              nchwData[n*C*H*W + c*H*W + h*W + w] = nhwcData[n*H*W*C + h*W*C + w*C + c];
+      if (!pseudo) {
+        const nchwData = this.cache!;
+        const nhwcData = this.nhwcCache;
+        for (let n = 0; n < N; ++n) {
+          for (let c = 0; c < C; ++c) {
+            for (let h = 0; h < H; ++h) {
+              for (let w = 0; w < W; ++w) {
+                nchwData[n*C*H*W + c*H*W + h*W + w] = nhwcData[n*H*W*C + h*W*C + w*C + c];
+              }
             }
           }
         }
@@ -246,7 +252,6 @@ export class Tensor {
     const dims = ProtoUtil.tensorDimsFromProto(tensorProto.dims!);
 
     const value = new Tensor(dims, type);
-    value.isInitializer = true;
 
     if (type === 'string') {
       // When it's STRING type, the value should always be stored in field
