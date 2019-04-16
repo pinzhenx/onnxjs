@@ -261,7 +261,7 @@ export class Profiler {
 
   private constructor(maxNumberEvents?: number, flushBatchSize?: number, flushIntervalInMilliseconds?: number) {
     this._started = false;
-    this._maxNumberEvents = maxNumberEvents === undefined ? 10000 : maxNumberEvents;
+    this._maxNumberEvents = maxNumberEvents === undefined ? 100000 : maxNumberEvents;
     this._flushBatchSize = flushBatchSize === undefined ? 10 : flushBatchSize;
     this._flushIntervalInMilliseconds = flushIntervalInMilliseconds === undefined ? 5000 : flushIntervalInMilliseconds;
   }
@@ -331,21 +331,36 @@ export class Profiler {
       }
     }
 
+    let sum = 0;
+    let sumSetInputTime = 0;
+    let sumComputeTime = 0;
+    let sumOverheadTime = 0;
+
     for (const node of reducedNodeTimings) {
       const time = node.time / node.count!;
       const setInputTime = node.setInputTime / node.count!;
       const computeTime = node.computeTime / node.count!;
-      const otherTime = time - setInputTime - computeTime;
+      const overheadTime = time - setInputTime - computeTime;
+
+
       const padNum = node.name.length <= 30 ? 30 - node.name.length : 0;
-      let str = `${node.name}:${' '.repeat(padNum)} total ${time.toFixed(5).slice(0, 6)}`;
+      let str = `${node.name}:${' '.repeat(padNum)} sum ${time.toFixed(5).slice(0, 6)}`;
       if (setInputTime !== 0 || computeTime !== 0) {
-        str += `, \
-setInput ${setInputTime.toFixed(5).slice(0, 6)}, \
-computeTime ${computeTime.toFixed(5).slice(0, 6)}, \
-reorder+overhead ${otherTime.toFixed(5).slice(0, 6)}`;
+        str += `, setInput ${setInputTime.toFixed(5).slice(0, 6)}, `;
+        str += `computeTime ${computeTime.toFixed(5).slice(0, 6)}, `;
+        str += `reorder+overhead ${overheadTime.toFixed(5).slice(0, 6)}`;
+        sum += time;
+        sumSetInputTime += setInputTime;
+        sumComputeTime += computeTime;
+        sumOverheadTime += overheadTime;
       }
       console.log(str);
     }
+
+    console.log(`Summary of WebNN execution (WASM ops are not taken into account)`);
+    console.log(`SetInput: ${(sumSetInputTime / sum * 100).toFixed(2)}%`);
+    console.log(`Compute: ${(sumComputeTime / sum * 100).toFixed(2)}%`);
+    console.log(`Reorder + Other Overhead: ${(sumOverheadTime / sum * 100).toFixed(2)}%`);
   }
 
   // create an event scope for the specific function

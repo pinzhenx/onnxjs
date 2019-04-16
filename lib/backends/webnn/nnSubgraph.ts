@@ -19,6 +19,7 @@ export class NNSubgraph implements Operator {
     this._operations = [];
     this._tensorTypes = [];
     this._subgraphName = this._onnxNode.opType;
+    this._outputTensors = [];
   }
 
   async run(inferenceHandler: InferenceHandler, inputs: Tensor[]): Promise<Tensor[]> {
@@ -46,20 +47,20 @@ export class NNSubgraph implements Operator {
       tensor.toNCHW(this.enablePseudoReorder);
     });
 
+    this._outputTensors.forEach((output) => {
+      output.toNHWC(this.enablePseudoReorder);
+    });
+
     // run submodel
-    // console.log(`Executing ${this._subgraphName} in WebNN`);
     await this.profiler.event('backend', 'WebNN.Execution.startCompute', async () => {
       await this._execution.startCompute();
     });
 
-    // create tensor from outputs
-    const outputId = this._outputsMapping[0].nnTensorId;
-    const outputDims = this._getTensorTypeById(outputId).dimensions!;
-    const y = new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC');
-    const nnOutput = this._nnOperands[outputId];
-    y.floatData.set(nnOutput);
-    // console.log(y.toNCHW().data)
-    return [y.toNCHW(this.enablePseudoReorder)];
+    this._outputTensors.forEach((output) => {
+      output.toNCHW(this.enablePseudoReorder);
+    });
+
+    return this._outputTensors;
   };
 
   initialize(attributes: Attribute): void {}
@@ -83,6 +84,11 @@ export class NNSubgraph implements Operator {
       const {nnOutputIndex, nnTensorId} = output;
       const operand = this._nnOperands[nnTensorId];
       this._execution.setOutput(nnOutputIndex!, operand);
+
+      const outputDims = this._getTensorTypeById(nnTensorId).dimensions!;
+      const tensor = new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', operand);
+      this._outputTensors.push(tensor);
+      tensor.toNCHW(this.enablePseudoReorder);
     });
   }
 
@@ -629,4 +635,5 @@ export class NNSubgraph implements Operator {
   private _model: Model;
   private _compilation: Compilation;
   private _execution: Execution;
+  private _outputTensors: Tensor[];
 }

@@ -45,16 +45,19 @@ export class Tensor {
    * get the underlying tensor data
    */
   get data(): TensorData {
-    if (this.cache === undefined) {
-      const data = this.dataProvider!(this.dataId);
-      if (data.length !== this.size) {
-        throw new Error(`Length of data provided by the Data Provider is inconsistent with the dims of this Tensor.`);
-      }
-      this.cache = data;
-    }
     if (this.format === 'NHWC') {
+      if (this.nhwcCache === undefined) {
+        this.nhwcCache = this.createBuffer();
+      }
       return this.nhwcCache;
     } else {
+      if (this.cache === undefined) {
+        const data = this.dataProvider!(this.dataId);
+        if (data.length !== this.size) {
+          throw new Error(`Length of data provided by the Data Provider is inconsistent with the dims of this Tensor.`);
+        }
+        this.cache = data;
+      }
       return this.cache;
     }
   }
@@ -135,7 +138,6 @@ export class Tensor {
    */
   public readonly size: number;
   public dims: number[];
-  private nhwcCache: TensorData;
 
   constructor(
       /**
@@ -152,7 +154,7 @@ export class Tensor {
        */
       public readonly dataId: Tensor.Id = {},
       public format: string = 'NCHW',
-      public isInitializer?: boolean) {
+      private nhwcCache?: TensorData) {
 
     this.dims = Array.from(dims);
     this.size = ShapeUtil.validateDimsAndCalcSize(dims);
@@ -182,16 +184,22 @@ export class Tensor {
       }
 
       if (empty) {
-        const buf = new ArrayBuffer(size * sizeof(type));
-        this.cache = createView(buf, type);
-      }
-      if (this.dims.length === 4) {
-        const nhwcBuf = new ArrayBuffer(size * sizeof(type));
-        this.nhwcCache = createView(nhwcBuf, type);
-      } else {
-        this.nhwcCache = this.cache!;
+        this.cache = this.createBuffer();
+        // lazily create 4-d NHWC cache
+        if (this.dims.length !== 4) {
+          if (nhwcCache === undefined /* && format === 'NHWC' */) {
+            this.nhwcCache = this.cache;
+          } else {
+            this.cache = this.nhwcCache;
+          }
+        }
       }
     }
+  }
+
+  createBuffer(): TensorData {
+    const buf = new ArrayBuffer(this.size * sizeof(this.type));
+    return createView(buf, this.type);
   }
 
   toNHWC(pseudo = false) {  // NCHW -> NHWC, ONNX -> WebNN
@@ -199,9 +207,17 @@ export class Tensor {
       const [N, C, H, W] = Array.from(this.dims);
       this.dims = [N, H, W, C];
 
+      if (!this.nhwcCache) {
+        if (!pseudo) {
+          this.nhwcCache = this.createBuffer();
+        } else {
+          this.nhwcCache = this.cache;
+        }
+      }
+
       if (!pseudo) {
         const nchwData = this.cache!;
-        const nhwcData = this.nhwcCache;
+        const nhwcData = this.nhwcCache!;
         for (let n = 0; n < N; ++n) {
           for (let c = 0; c < C; ++c) {
             for (let h = 0; h < H; ++h) {
@@ -224,7 +240,7 @@ export class Tensor {
 
       if (!pseudo) {
         const nchwData = this.cache!;
-        const nhwcData = this.nhwcCache;
+        const nhwcData = this.nhwcCache!;
         for (let n = 0; n < N; ++n) {
           for (let c = 0; c < C; ++c) {
             for (let h = 0; h < H; ++h) {
