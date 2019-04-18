@@ -170,7 +170,7 @@ const imageClassificationModels = [{
   modelName: 'Resnet v1 (ONNX)',
   modelFormatName: 'resnet_v1_onnx',
   modelSize: '102.6MB',
-  modelFile: '../../../../deps/data/data/examples/models/resnet50_8.onnx',
+  modelFile: '../../../resnet50/resnet50_8.onnx',
   labelsFile: '../../webnn_benchmark/labels1000.txt',
   inputSize: [224, 224, 3],
   outputSize: 1000,
