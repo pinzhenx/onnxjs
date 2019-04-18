@@ -4,7 +4,8 @@ async function runExample() {
 
   const supportedOps = getSupportedOps();
   log(`Offload Ops: ${supportedOps.length ? supportedOps.join(', ') : 'None'}`);
-  log(`Enabled Pseudo Reorder: ${pseudoReorder.checked}`);
+  log(`Enable Pseudo Reorder: ${pseudoReorder.checked}`);
+  log(`Enable Op-level profiling: ${profiling.checked}`);
   log(`Iterations: ${Number(iteration.value)}`);
 
   // Create an ONNX inference session with WebGL backend.
@@ -34,7 +35,7 @@ async function runExample() {
   // Render the output result in html.
   printMatches(outputData);
 
-  runBenchmark(session, inputTensor, Number(iteration.value));
+  runBenchmark(session, inputTensor, Number(iteration.value), profiling.checked);
 }
 
 /**

@@ -12,10 +12,12 @@ function log(msg = '') {
   predictions.innerHTML += `${msg}<br>`;
 }
 
-async function runBenchmark(session, inputData, iterations) {
+async function runBenchmark(session, inputData, iterations, profiling = false) {
   log();
   log('Running benchmark (Check progress in the console):');
-  session.startProfiling();
+  if (profiling) {
+    session.startProfiling();
+  }
   const timingResults = [];
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
@@ -25,7 +27,9 @@ async function runBenchmark(session, inputData, iterations) {
   }
   const {mean, std} = statUtils(timingResults);
   log(`${(mean).toFixed(3)}${isNaN(std) ? '' : ` ± ${std.toFixed(3)}`} ms`);
-  session.endProfiling();
+  if (profiling) {
+    session.endProfiling();
+  }
 }
 
 function statUtils(arr) {
