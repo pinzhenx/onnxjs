@@ -6,10 +6,12 @@ window.addEventListener('load', () => {
         x.checked = false;
         x.disabled = true;
       });
+      webnnPrefer.disabled = checkAll.disabled = uncheckAll.disabled = true;
     } else {
       document.querySelectorAll('input[name=supportedOp]').forEach((x) => {
         x.disabled = false;
       });
+      webnnPrefer.disabled = checkAll.disabled = uncheckAll.disabled = false;
     }
 
   }, false);
