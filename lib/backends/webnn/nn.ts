@@ -110,3 +110,11 @@ interface Execution {
   setOutput: (index: number, data: NNTensorType) => void;
   startCompute: () => Promise<number>;
 }
+
+interface preferCodeMap {
+  fast: number;
+  sustained: number;
+  low: number;
+};
+
+type preferStrType = keyof preferCodeMap;
