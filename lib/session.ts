@@ -19,6 +19,7 @@ export declare namespace Session {
     profiler?: Profiler.Config;
     supportedOps?: string[];
     enablePseudoReorder?: boolean;
+    prefer?: preferStrType;
   }
 
   export interface Context {
@@ -36,6 +37,7 @@ export class Session {
     this.context = {profiler: this.profiler, graphInputTypes: [], graphInputDims: []};
     this.supportedOps = new Set(config.supportedOps || []);
     this.enablePseudoReorder = config.enablePseudoReorder || false;
+    this.prefer = config.prefer || 'fast';
   }
 
   startProfiling() {
@@ -267,7 +269,7 @@ export class Session {
           }
         }
 
-        this._ops[i] = new NNSubgraph(subgraph, initializers, this.enablePseudoReorder, this.profiler);
+        this._ops[i] = new NNSubgraph(subgraph, initializers, this.enablePseudoReorder, this.prefer, this.profiler);
       } else {
         this._ops[i] = this.sessionHandler.resolve(nodes[i], this._model.opsets);
       }
@@ -280,6 +282,7 @@ export class Session {
   private _ops: Operator[];
   private _executionPlan: ExecutionPlan;
 
+  private prefer: preferStrType;
   private enablePseudoReorder: boolean;
   private supportedOps: Set<string>;
   private backendHint?: string;

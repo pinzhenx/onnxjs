@@ -12,6 +12,7 @@ export class NNSubgraph implements Operator {
       private subgraph: NNSubgraphNode,
       initializers: Map<number, Tensor>,
       private enablePseudoReorder = false,
+      private prefer: preferStrType = 'fast',
       private profiler: Readonly<Profiler>) {
     this._operandIndex = 0;
     this._nnOperands = [];
@@ -80,8 +81,14 @@ export class NNSubgraph implements Operator {
     this._addInputsOutputs();
     await this._model.finish();
 
+    const preferCodeMap: preferCodeMap = {
+      fast: this._nn.PREFER_FAST_SINGLE_ANSWER,
+      sustained: this._nn.PREFER_SUSTAINED_SPEED,
+      low: this._nn.PREFER_LOW_POWER,
+    };
+
     this._compilation = await this._model.createCompilation();
-    this._compilation.setPreference(this._nn.PREFER_FAST_SINGLE_ANSWER);
+    this._compilation.setPreference(preferCodeMap[this.prefer]);
     await this._compilation.finish();
 
     this._execution = await this._compilation.createExecution();
