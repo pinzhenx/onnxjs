@@ -15,6 +15,10 @@ window.addEventListener('load', () => {
     }
 
   }, false);
+
+  if (navigator.ml) {
+    warning.style.display = 'none';
+  }
 });
 
 function getSupportedOps() {
