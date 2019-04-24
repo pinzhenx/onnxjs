@@ -147,6 +147,11 @@ export class NNSubgraph implements Operator {
           const kernelHeight = kernelShape[0];
           const kernelWidth = kernelShape[1];
 
+          const autoPad = attributes.getString('auto_pad', 'NOTSET');
+          if (autoPad === 'SAME_UPPER' || autoPad === 'SAME_LOWER') {
+            throw new Error('Uneven padding is not supported.');
+          }
+
           const pads = attributes.getInts('pads', [0, 0, 0, 0]);
           if (pads.length !== 4) {
             throw new Error('Invalid pads');
@@ -382,8 +387,9 @@ export class NNSubgraph implements Operator {
           for (let i = in1Dims.length - 1, j = in2Dims.length - 1, k = outputDims.length - 1; k >= 0;) {
             let dim1 = in1Dims[i--] || 1;
             let dim2 = in2Dims[j--] || 1;
-            if (dim1 !== dim2 && dim1 !== 1 && dim2 !== 1)
+            if (dim1 !== dim2 && dim1 !== 1 && dim2 !== 1) {
               throw new Error(`Dimensions of ${in1} and ${in2} are not compatible`);
+            }
             outputDims[k--] = Math.max(dim1, dim2);
           }
 
