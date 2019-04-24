@@ -80,6 +80,14 @@ export declare namespace InferenceSession {
     }
   }
 
+  export interface preferCodeMap {
+    fast: number;
+    sustained: number;
+    low: number;
+  }
+
+  export type preferStrType = keyof preferCodeMap;
+
   /**
    * configuration for creating a new inference session
    */
@@ -94,6 +102,9 @@ export declare namespace InferenceSession {
      * specify the configuration of the profiler that used in an inference session
      */
     profiler?: Config.Profiler;
+    supportedOps?: string[];
+    enablePseudoReorder?: boolean;
+    prefer?: preferStrType;
   }
 
   /**
