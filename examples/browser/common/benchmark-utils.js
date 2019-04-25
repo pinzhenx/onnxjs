@@ -1,3 +1,26 @@
+window.addEventListener('load', () => {
+  onnxBackend.addEventListener('change', (e) => {
+
+    if (e.target.value === 'webgl') {
+      document.querySelectorAll('input[name=supportedOp]').forEach((x) => {
+        x.checked = false;
+        x.disabled = true;
+      });
+      webnnPrefer.disabled = checkAll.disabled = uncheckAll.disabled = true;
+    } else {
+      document.querySelectorAll('input[name=supportedOp]').forEach((x) => {
+        x.disabled = false;
+      });
+      webnnPrefer.disabled = checkAll.disabled = uncheckAll.disabled = false;
+    }
+
+  }, false);
+
+  if (navigator.ml) {
+    warning.style.display = 'none';
+  }
+});
+
 function getSupportedOps() {
   return Array.from(
     document.querySelectorAll('input[name=supportedOp]:checked')).map(x => x.value);

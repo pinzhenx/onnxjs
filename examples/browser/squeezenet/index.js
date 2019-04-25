@@ -3,6 +3,8 @@ async function runExample() {
   printHeader('Results');
 
   const supportedOps = getSupportedOps();
+  log(`ONNX Backend: ${onnxBackend.value}`);
+  log(`WebNN Prefer: ${webnnPrefer.value}`);
   log(`Offload Ops: ${supportedOps.length ? supportedOps.join(', ') : 'None'}`);
   log(`Enable Pseudo Reorder: ${pseudoReorder.checked}`);
   log(`Enable Op-level profiling: ${profiling.checked}`);
@@ -10,9 +12,10 @@ async function runExample() {
 
   // Create an ONNX inference session with WebGL backend.
   const session = new onnx.InferenceSession({
-    backendHint: 'wasm',
+    backendHint: onnxBackend.value,
     supportedOps: supportedOps,
-    enablePseudoReorder: pseudoReorder.checked
+    enablePseudoReorder: pseudoReorder.checked,
+    prefer: webnnPrefer.value,
   });
 
   // Load an ONNX model. This model is SqueezeNet that takes a 1*3*224*224 image and classifies it.
