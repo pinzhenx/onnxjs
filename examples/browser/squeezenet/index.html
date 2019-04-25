@@ -28,16 +28,21 @@
     <input type="number" id="iteration" min="1" value="50">
     <input type="button" value="Run" onclick="runExample()">
     <br><br>
-    <p><b>ONNX Backend & WebNN Prefer</b></p>
-    <select id="onnxBackend">
-      <option value="wasm">WASM</option>
-      <option value="webgl">WebGL</option>
-    </select>
-    <select id="webnnPrefer">
-      <option value="fast" selected>FAST_SINGLE_ANSWER</option>
-      <option value="sustained">SUSTAINED_SPEED</option>
-      <option value="low">LOW_POWER</option>
-    </select>
+    <p><b>Backend / Preference</b></p>
+    <label>ONNX Backend:
+      <select id="onnxBackend">
+        <option value="wasm">WASM</option>
+        <option value="webgl">WebGL</option>
+      </select>
+    </label>
+    <br><br>
+    <label>WebNN Prefer:
+      <select id="webnnPrefer">
+        <option value="fast" selected>FAST_SINGLE_ANSWER</option>
+        <option value="sustained">SUSTAINED_SPEED</option>
+        <option value="low">LOW_POWER</option>
+      </select>
+    </label>
     <br><br>Note: WebGL backend is not able to offload to WebNN.
     <br><br>
     <p><b>Pseudo Tensor Reordering</b></p>
