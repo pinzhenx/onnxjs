@@ -68,7 +68,7 @@ export class NNSubgraph implements Operator {
 
     graphInputTensors.forEach((tensor, i) => {
       tensor.toNHWC();
-      const tensorId = this._addTensorFloat32(tensor.floatData as Float32Array, tensor.dims);
+      const tensorId = this._addTensorFloat32(tensor.dims);
       this._tensorData[this.subgraph.inputs[i]] = {tensor: tensor, nnTensorId: tensorId};
     });
 
@@ -131,10 +131,10 @@ export class NNSubgraph implements Operator {
           const nGroups = attributes.getInt('group', 1);
           const dims = convFilter.dims;
           const nChannels = dims[0];
-          const convFilterId = this._addTensorFloat32(convFilter.floatData as Float32Array, convFilter.dims);
+          const convFilterId = this._addTensorFloat32(convFilter.dims, convFilter.floatData as Float32Array);
           const convBiasId = convBias !== undefined ? // optional bias
-            this._addTensorFloat32(convBias.floatData as Float32Array, convBias.dims):
-            this._addTensorFloat32(new Float32Array(nChannels).fill(0), [nChannels]);
+            this._addTensorFloat32(convBias.dims, convBias.floatData as Float32Array):
+            this._addTensorFloat32([nChannels], new Float32Array(nChannels).fill(0));
 
           inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
           inputs.push(convFilterId);
@@ -256,7 +256,7 @@ export class NNSubgraph implements Operator {
           const outputChannels = isDepthWiseConv ? nGroups : nChannels;
           const outputDims = [batch, outputHeight, outputWidth, outputChannels];
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -292,8 +292,8 @@ export class NNSubgraph implements Operator {
           }
 
           inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
-          inputs.push(this._addTensorFloat32(convFilterTensor, convFilterDims));
-          inputs.push(this._addTensorFloat32(convBiasTensor, convBiasDims));
+          inputs.push(this._addTensorFloat32(convFilterDims, convFilterTensor));
+          inputs.push(this._addTensorFloat32(convBiasDims, convBiasTensor));
           // paddings
           inputs.push(this._addScalarInt32(0));
           inputs.push(this._addScalarInt32(0));
@@ -318,7 +318,7 @@ export class NNSubgraph implements Operator {
           // Add outputs
           const outputDims = Array.from(input.dims);
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -342,8 +342,8 @@ export class NNSubgraph implements Operator {
           }
 
           inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
-          inputs.push(this._addTensorFloat32(convFilterTensor, convFilterDims));
-          inputs.push(this._addTensorFloat32(convBiasTensor, convBiasDims));
+          inputs.push(this._addTensorFloat32(convFilterDims, convFilterTensor));
+          inputs.push(this._addTensorFloat32(convBiasDims, convBiasTensor));
           // paddings
           inputs.push(this._addScalarInt32(0));
           inputs.push(this._addScalarInt32(0));
@@ -357,7 +357,7 @@ export class NNSubgraph implements Operator {
           // Add outputs
           const outputDims = Array.from(input.dims);
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -394,7 +394,7 @@ export class NNSubgraph implements Operator {
           }
 
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -421,8 +421,8 @@ export class NNSubgraph implements Operator {
             throw new Error('Only support fc-like Gemm oprations, i.e. alpha == beta == 1 && !transA && transB');
           }
 
-          const weightsId = this._addTensorFloat32(weights.floatData as Float32Array, weights.dims);
-          const biasId = this._addTensorFloat32(bias.floatData as Float32Array, bias.dims);
+          const weightsId = this._addTensorFloat32(weights.dims, weights.floatData as Float32Array);
+          const biasId = this._addTensorFloat32(bias.dims, bias.floatData as Float32Array);
 
           inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
           inputs.push(weightsId);
@@ -434,7 +434,7 @@ export class NNSubgraph implements Operator {
           const batchSize = ShapeUtil.size(input.dims) / weights.dims[1];
           const outputDims = [batchSize, nUnits];
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -485,7 +485,7 @@ export class NNSubgraph implements Operator {
           const outputWidth = Math.floor((inputWidth - kernelWidth + paddingWidthBegin + paddingWidthEnd)/strideX + 1);
           const outputDims = [batch, outputHeight, outputWidth, inputChannels];
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -521,7 +521,7 @@ export class NNSubgraph implements Operator {
 
           // Add outputs
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -548,7 +548,7 @@ export class NNSubgraph implements Operator {
             outputDims[concatAxis] += this._getTensorByOnnxId(node.inputs[i]).dims[concatAxis];
           }
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -578,7 +578,7 @@ export class NNSubgraph implements Operator {
           const outputWidth = 1;
           const outputDims = [batch, outputHeight, outputWidth, inputChannels];
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -594,8 +594,7 @@ export class NNSubgraph implements Operator {
 
           const outputDims = input.dims;
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
-          outputData[0] = 1;
-          const outputId = this._addTensorFloat32(outputData, outputDims);  // allocate output placehoder
+          const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
@@ -662,7 +661,7 @@ export class NNSubgraph implements Operator {
     return this._addOperand({type: this._nn.FLOAT32}, new Float32Array([value]));
   }
 
-  _addTensorFloat32(tensor: Float32Array, dims: number[]) {
+  _addTensorFloat32(dims: number[], tensor?: Float32Array) {
     return this._addOperand({
       type: this._nn.TENSOR_FLOAT32,
       dimensions: dims
