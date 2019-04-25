@@ -376,7 +376,24 @@ export class NNSubgraph implements Operator {
           const in2 = this._getTensorByOnnxId(node.inputs[1]);
           inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
           inputs.push(this._tensorData[node.inputs[1]].nnTensorId!);
-          inputs.push(this._addScalarInt32(this._nn.FUSED_NONE));
+
+          if (node.opType === 'Add' || node.opType === 'Sum') {
+            opType = this._nn.ADD;
+          } else if (node.opType === 'Mul') {
+            opType = this._nn.MUL;
+          }
+
+          let nextNode = this.subgraph.nodes[i + 1];
+          if (nextNode &&
+              nextNode.opType === 'Relu' &&
+              node.outputs[0] === nextNode.inputs[0]) {
+            // Fuse relu
+            inputs.push(this._addScalarInt32(this._nn.FUSED_RELU));
+            i++;
+            node = nextNode;
+          } else {
+            inputs.push(this._addScalarInt32(this._nn.FUSED_NONE));
+          }
 
           // Add outputs
           const in1Dims = in1.dims;
@@ -399,12 +416,6 @@ export class NNSubgraph implements Operator {
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
           outputs.push(outputId);
-
-          if (node.opType === 'Add' || node.opType === 'Sum') {
-            opType = this._nn.ADD;
-          } else if (node.opType === 'Mul') {
-            opType = this._nn.MUL;
-          }
         } break;
         case 'Gemm': {
           // Add inputs
@@ -427,7 +438,20 @@ export class NNSubgraph implements Operator {
           inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
           inputs.push(weightsId);
           inputs.push(biasId);
-          inputs.push(this._addScalarInt32(this._nn.FUSED_RELU));
+
+          opType = this._nn.FULLY_CONNECTED;
+
+          let nextNode = this.subgraph.nodes[i + 1];
+          if (nextNode &&
+              nextNode.opType === 'Relu' &&
+              node.outputs[0] === nextNode.inputs[0]) {
+            // Fuse relu
+            inputs.push(this._addScalarInt32(this._nn.FUSED_RELU));
+            i++;
+            node = nextNode;
+          } else {
+            inputs.push(this._addScalarInt32(this._nn.FUSED_NONE));
+          }
 
           // Add outputs
           const nUnits = weights.dims[0];
@@ -439,8 +463,6 @@ export class NNSubgraph implements Operator {
               new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
           this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
           outputs.push(outputId);
-
-          opType = this._nn.FULLY_CONNECTED;
         } break;
         case 'AveragePool':
         case 'MaxPool': {
@@ -520,6 +542,36 @@ export class NNSubgraph implements Operator {
           this._setOperandValue(shapeId, new Int32Array(outputDims));
 
           // Add outputs
+          const outputData = new Float32Array(ShapeUtil.size(outputDims));
+          const outputId = this._addTensorFloat32(outputDims);
+          const outputTensor =
+              new Tensor(outputDims, 'float32', undefined, undefined, undefined, undefined, 'NHWC', outputData);
+          this._tensorData[node.outputs[0]] = {tensor: outputTensor, nnTensorId: outputId};
+          outputs.push(outputId);
+
+          opType = this._nn.RESHAPE;
+        } break;
+        case 'Flatten': {
+          const input = this._getTensorByOnnxId(node.inputs[0]);
+          const axis =  attributes.getInt('axis', 1);
+          inputs.push(this._tensorData[node.inputs[0]].nnTensorId!);
+
+          const inputDims = input.dims;
+          const rank = inputDims.length;
+          if (axis > rank || axis < 0) {
+            throw new Error(`Axis ${axis} is not in the range [0, ${rank}]`);
+          }
+          let outputDim1 = inputDims.slice(0, axis);
+          let outputDim2 = inputDims.slice(axis);
+          const outputDims = [
+            outputDim1.length ? ShapeUtil.size(outputDim1) : 1,
+            outputDim2.length ? ShapeUtil.size(outputDim2) : 1
+          ];
+
+          const shapeId = this._addTensorInt32(new Int32Array(outputDims), [2]);
+          inputs.push(shapeId);
+
+          // Add output
           const outputData = new Float32Array(ShapeUtil.size(outputDims));
           const outputId = this._addTensorFloat32(outputDims);
           const outputTensor =
