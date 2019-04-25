@@ -14,9 +14,27 @@
   <h1>Squeezenet Benchmark</h1>
   <img id="imageSource" src="./squeezenet-piano.jpg" width="224" />
   <div>
+    <p id="warning"><mark><b>WebNN-enabled Chromium Required</b></mark></p>
     <p><b>Iterations</b></p>
     <input type="number" id="iteration" min="1" value="50">
     <input type="button" value="Run" onclick="runExample()">
+    <br><br>
+    <p><b>Backend / Preference</b></p>
+    <label>ONNX Backend:
+      <select id="onnxBackend">
+        <option value="wasm">WASM</option>
+        <option value="webgl">WebGL</option>
+      </select>
+    </label>
+    <br><br>
+    <label>WebNN Prefer <a href="https://github.com/intel/webml-polyfill/wiki/Proposed-Chromium-Switches-for-Backends">(?)</a>:
+      <select id="webnnPrefer">
+        <option value="fast" selected>FAST_SINGLE_ANSWER</option>
+        <option value="sustained">SUSTAINED_SPEED</option>
+        <option value="low">LOW_POWER</option>
+      </select>
+    </label>
+    <br><br>Note: WebGL backend is not able to offload to WebNN.
     <br><br>
     <p><b>Pseudo Tensor Reordering</b></p>
     <label><input id="pseudoReorder" type="checkbox"> Enable </label>
@@ -27,8 +45,8 @@
     <br>Note: Report will be shown in the console. It will slightly hurt the performance.
     <br><br>
     <p><b>Offload to WebNN</b></p>
-    <button onclick="document.querySelectorAll('input[name=supportedOp]').forEach(x => x.checked = true)">Select All</button>
-    <button onclick="document.querySelectorAll('input[name=supportedOp]').forEach(x => x.checked = false)">Uncheck All</button>
+    <button id="checkAll" onclick="document.querySelectorAll('input[name=supportedOp]').forEach(x => x.checked = true)">Select All</button>
+    <button id="uncheckAll" onclick="document.querySelectorAll('input[name=supportedOp]').forEach(x => x.checked = false)">Uncheck All</button>
     <br><label><input type="checkbox" name="supportedOp" value="Conv"> Conv</label>
     <!-- <br><label><input type="checkbox" name="supportedOp" value="BatchNormalization"> BatchNormalization (emulated by WebNN.CONV)</label> -->
     <br><label><input type="checkbox" name="supportedOp" value="Relu"> Relu</label>
