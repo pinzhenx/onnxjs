@@ -1,0 +1,77 @@
+<html>
+<head>
+  <script src="../../../dist/onnx.min.js"></script>
+  <script src="../common/benchmark-utils.js"></script>
+  <script src="../common/ndarray-browser-min.js"></script>
+  <script src="../common/imagenet.js"></script>
+  <script src="../common/image-loader.js"></script>
+  <script src="./index.js"></script>
+  <script>
+    const imageSize = 224;
+  </script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-136878181-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-136878181-1');
+  </script>
+</head>
+<body>
+  <h1>Resnet50 Benchmark</h1>
+  <img id="imageSource" src="./resnet-cat.jpg" width="224"/>
+  <div>
+    <p id="warning"><mark><b>WebNN-enabled Chromium Required</b></mark></p>
+    <p><b>Iterations</b></p>
+    <input type="number" id="iteration" min="1" value="50">
+    <input type="button" value="Run" onclick="runExample()">
+    <br><br>
+    <p><b>Backend / Preference</b></p>
+    <label>ONNX Backend:
+      <select id="onnxBackend">
+        <option value="wasm">WASM</option>
+        <option value="webgl">WebGL</option>
+      </select>
+    </label>
+    <br><br>
+    <label>WebNN Prefer <a href="https://github.com/intel/webml-polyfill/wiki/Proposed-Chromium-Switches-for-Backends">(?)</a>:
+      <select id="webnnPrefer">
+        <option value="fast" selected>FAST_SINGLE_ANSWER</option>
+        <option value="sustained">SUSTAINED_SPEED</option>
+        <option value="low">LOW_POWER</option>
+      </select>
+    </label>
+    <br><br>Note: WebGL backend is not able to offload to WebNN.
+    <br><br>
+    <p><b>Pseudo Tensor Reordering</b></p>
+    <label><input id="pseudoReorder" type="checkbox"> Enable </label>
+    <br>Note: For comparison purposes only. Once selected, answers will be incorrect as it doesn't actually perform data reordering (in JS) when the tensor is exchanged between the WebNN and ONNX.js
+    <br><br>
+    <p><b>Op-level Profiling</b></p>
+    <label><input id="profiling" type="checkbox"> Enable </label>
+    <br>Note: Report will be shown in the console. It will slightly hurt the performance.
+    <br><br>
+    <p><b>Offload to WebNN</b></p>
+    <button id="checkAll" onclick="document.querySelectorAll('input[name=supportedOp]').forEach(x => x.checked = true)">Select All</button>
+    <button id="uncheckAll" onclick="document.querySelectorAll('input[name=supportedOp]').forEach(x => x.checked = false)">Uncheck All</button>
+    <br><label><input type="checkbox" name="supportedOp" value="Conv"> Conv</label>
+    <br><label><input type="checkbox" name="supportedOp" value="BatchNormalization"> BatchNormalization</label>
+    <br><label><input type="checkbox" name="supportedOp" value="Relu"> Relu</label>
+    <!-- <br><label><input type="checkbox" name="supportedOp" value="GlobalAveragePool"> GlobalAveragePool</label> -->
+    <br><label><input type="checkbox" name="supportedOp" value="AveragePool"> AveragePool</label>
+    <br><label><input type="checkbox" name="supportedOp" value="MaxPool"> MaxPool</label>
+    <!-- <br><label><input type="checkbox" name="supportedOp" value="Concat"> Concat</label> -->
+    <br><label><input type="checkbox" name="supportedOp" value="Softmax"> Softmax</label>
+    <!-- <br><label><input type="checkbox" name="supportedOp" value="Add"> Add</label> -->
+    <!-- <br><label><input type="checkbox" name="supportedOp" value="Mul"> Mul</label> -->
+    <br><label><input type="checkbox" name="supportedOp" value="Sum"> Sum</label>
+    <br><label><input type="checkbox" name="supportedOp" value="Reshape"> Reshape</label>
+    <br><label><input type="checkbox" name="supportedOp" value="Gemm"> Gemm</label>
+  </div>
+  <div id="predictions">
+
+  </div>
+</body>
+</html>
