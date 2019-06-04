@@ -25,7 +25,7 @@ export class NNModelManager {
   async createCompiledModel(handler: WebNNInferenceHandler, op: NNSubgraphOp, inputs: Tensor[]): Promise<NNModel> {
     return await this.profiler.event('backend', 'NNModelManager.createCompiledModel', async () => {
       try {
-        return await new NNModel(this.nnContext).compile(handler, op, inputs);
+        return await new NNModel(this.nnContext).compile(handler, op, inputs, handler.session.prefer);
       } catch (err) {
         Logger.error('NNModelManager', '');
         throw err;

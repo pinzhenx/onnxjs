@@ -10,6 +10,7 @@ import {Tensor} from '../../tensor';
 import {TensorUtil} from '../../util';
 import {WebNNBackend} from '../backend-webnn';
 
+import {preferStrType} from './types';
 import {WebNNInferenceHandler} from './inference-handler';
 import {WEBNN_OP_RESOLVE_RULES, WEBNN_SUPPORTED_OPS} from './op-resolve-rules';
 import {CPU_OP_RESOLVE_RULES} from '../cpu/op-resolve-rules';
@@ -25,13 +26,19 @@ export class WebNNSessionHandler implements SessionHandler, Graph.Initializer {
   private initializers: Set<number>;
   private opResolveRules: ReadonlyArray<OpSet.ResolveRule>;
 
-  constructor(public readonly backend: WebNNBackend, public readonly context: Session.Context) {
-    const FALLBACK = false;
+  constructor(public readonly backend: WebNNBackend, public readonly context: Session.Context,
+              public readonly wasmFallback: boolean, public readonly cpuFallback: boolean,
+              public readonly prefer: preferStrType) {
     this.nnModelManager = new NNModelManager(this.context.profiler, backend.nnContext);
     this.tensorCache = new Map();
     this.initializers = new Set();
-    this.opResolveRules = FALLBACK ? WEBNN_OP_RESOLVE_RULES.concat(WASM_OP_RESOLVE_RULES).concat(CPU_OP_RESOLVE_RULES)
-                                   : WEBNN_OP_RESOLVE_RULES;
+    this.opResolveRules = WEBNN_OP_RESOLVE_RULES;
+    if (wasmFallback) {
+      this.opResolveRules = this.opResolveRules.concat(WASM_OP_RESOLVE_RULES);
+    }
+    if (cpuFallback) {
+      this.opResolveRules = this.opResolveRules.concat(CPU_OP_RESOLVE_RULES);
+    }
   }
 
   transformGraph(transformer: Graph.Transformer) {

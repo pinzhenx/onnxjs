@@ -8,7 +8,6 @@ import {WebNNInferenceHandler} from './inference-handler';
 export class NNModel {
 
   constructor (private _nn: NeuralNetworkContext) {
-    this._prefer = 'fast'; // TODO: remove hard-coded prefer
     this._operandIndex = 0;
     this._onnxIdToNNId = new Map();
   }
@@ -22,7 +21,10 @@ export class NNModel {
     return this._subgraph.outputs.map((onnxId) => handler.getTensor(onnxId));
   };
 
-  async compile(handler: WebNNInferenceHandler, op: NNSubgraphOp, inputs: Tensor[]): Promise<NNModel> {
+  async compile(handler: WebNNInferenceHandler,
+                op: NNSubgraphOp,
+                inputs: Tensor[],
+                prefer: preferStrType = 'fast'): Promise<NNModel> {
 
     this._model = await this._nn.createModel();
     this._subgraph = op;
@@ -45,7 +47,7 @@ export class NNModel {
     };
 
     this._compilation = await this._model.createCompilation();
-    this._compilation.setPreference(preferCodeMap[this._prefer]);
+    this._compilation.setPreference(preferCodeMap[prefer]);
     await this._compilation.finish();
 
     this._execution = await this._compilation.createExecution();
@@ -661,7 +663,6 @@ export class NNModel {
     }, tensor);
   }
 
-  private _prefer: preferStrType;
   private _subgraph: NNSubgraphOp;
   private _operandIndex: number;
   private _onnxIdToNNId: Map<number, number>;
