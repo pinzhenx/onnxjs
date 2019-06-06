@@ -12,11 +12,6 @@ import {NeuralNetworkContext, NNNavigator, preferStrType} from './webnn/types';
 
 type WebNNOptions = BackendInterface.WebNNOptions;
 
-/**
- * WebGLBackend is the entry point for all WebGL opeartions
- * When it starts it created the WebGLRenderingContext
- * and other main framework components such as Program and Texture Managers
- */
 export class WebNNBackend implements Backend, WebNNOptions {
   disabled?: boolean;
   prefer: preferStrType;

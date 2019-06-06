@@ -305,6 +305,7 @@ export class GraphUtils {
         nodeIds: sortSet(partition),
         inputIds: sortSet(inTensors),
         outputIds: sortSet(outTensors),
+        color: this.color[Array.from(partition)[0]] ? 'black' : 'white'
       });
     }
     return result;

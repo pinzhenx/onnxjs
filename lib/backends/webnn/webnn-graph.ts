@@ -1,13 +1,12 @@
-import {Tensor} from '../../tensor';
 import {ShapeUtil} from '../../util';
+import {Tensor} from '../../tensor';
 import {NeuralNetworkContext, NNTensorType, OperandOptions, Model, Compilation, Execution} from './types';
-import {preferStrType, preferCodeMap} from './types';
-import {NNSubgraphOp} from './nn-subgraph-op';
 import {WebNNInferenceHandler} from './inference-handler';
+import {WebNNGraphOp} from './webnn-graph-op';
 
-export class NNModel {
+export class WebNNGraph {
 
-  constructor (private _nn: NeuralNetworkContext) {
+  constructor() {
     this._operandIndex = 0;
     this._onnxIdToNNId = new Map();
   }
@@ -18,20 +17,20 @@ export class NNModel {
       this._execution.setInput(i, tensor.data as NNTensorType);
     });
     await this._execution.startCompute();
-    return this._subgraph.outputs.map((onnxId) => handler.getTensor(onnxId));
+    return this._graph.outputs.map((onnxId) => handler.getTensor(onnxId));
   };
 
   async compile(handler: WebNNInferenceHandler,
-                op: NNSubgraphOp,
-                inputs: Tensor[],
-                prefer: preferStrType = 'fast'): Promise<NNModel> {
+                graph: WebNNGraphOp,
+                inputs: Tensor[]): Promise<WebNNGraph> {
 
+    this._nn = handler.session.webnnContext;
     this._model = await this._nn.createModel();
-    this._subgraph = op;
+    this._graph = graph;
 
     inputs.forEach((tensor, i) => {
       const nnId = this._addTensorFloat32(Array.from(tensor.dims));
-      const onnxId = this._subgraph.inputs[i];
+      const onnxId = this._graph.inputs[i];
       this._setOnnxIdToNNId(onnxId, nnId);
       handler.setTensor(onnxId, tensor);
     });
@@ -40,19 +39,20 @@ export class NNModel {
     this._addInputsOutputs();
     await this._model.finish();
 
-    const preferCodeMap: preferCodeMap = {
+    const preferCodeMap = {
       fast: this._nn.PREFER_FAST_SINGLE_ANSWER,
       sustained: this._nn.PREFER_SUSTAINED_SPEED,
       low: this._nn.PREFER_LOW_POWER,
     };
 
+    const prefer = handler.session.prefer;
     this._compilation = await this._model.createCompilation();
     this._compilation.setPreference(preferCodeMap[prefer]);
     await this._compilation.finish();
 
     this._execution = await this._compilation.createExecution();
     // allocate and bind output buffers at compile time
-    this._subgraph.outputs.forEach((onnxId, i) => {
+    this._graph.outputs.forEach((onnxId, i) => {
       const tensor = handler.getTensor(onnxId);
       const buffer = new Float32Array(ShapeUtil.size(tensor.dims));
       const tensorWithBuffer = new Tensor(tensor.dims, tensor.type, undefined, undefined, buffer);
@@ -77,20 +77,20 @@ export class NNModel {
   }
 
   _addInputsOutputs() {
-    const modelInputs = this._subgraph.inputs.map((onnxId) => this._getNNTensorId(onnxId));
-    const modelOutputs = this._subgraph.outputs.map((onnxId) => this._getNNTensorId(onnxId));
+    const modelInputs = this._graph.inputs.map((onnxId) => this._getNNTensorId(onnxId));
+    const modelOutputs = this._graph.outputs.map((onnxId) => this._getNNTensorId(onnxId));
     this._model.identifyInputsAndOutputs(modelInputs, modelOutputs);
   }
 
   _addOpsAndParams(handler: WebNNInferenceHandler) {
 
-    for (let i = 0; i < this._subgraph.nodes.length; i++) {
+    for (let i = 0; i < this._graph.nodes.length; i++) {
 
       let opType: number = -1;
       let inputs: number[] = [];
       let outputs: number[] = [];
 
-      let node = this._subgraph.nodes[i];
+      let node = this._graph.nodes[i];
       let attributes = node.attributes;
 
       switch(node.opType) {
@@ -136,7 +136,7 @@ export class NNModel {
           const strideY = strides[0];
           const strideX = strides[1];
 
-          let nextNode = this._subgraph.nodes[i + 1];
+          let nextNode = this._graph.nodes[i + 1];
           // fuse batch norm preceded by a conv
           if (nextNode &&
               nextNode.opType === 'BatchNormalization' &&
@@ -164,7 +164,7 @@ export class NNModel {
 
             i++;
             node = nextNode;
-            nextNode = this._subgraph.nodes[i + 1];
+            nextNode = this._graph.nodes[i + 1];
           }
 
           // reshape kernel for depthwise conv
@@ -274,7 +274,7 @@ export class NNModel {
           inputs.push(this._addScalarInt32(1));
           inputs.push(this._addScalarInt32(1));
 
-          let nextNode = this._subgraph.nodes[i + 1];
+          let nextNode = this._graph.nodes[i + 1];
           if (nextNode &&
               nextNode.opType === 'Relu' &&
               node.outputs[0] === nextNode.inputs[0]) {
@@ -352,7 +352,7 @@ export class NNModel {
             opType = this._nn.MUL;
           }
 
-          let nextNode = this._subgraph.nodes[i + 1];
+          let nextNode = this._graph.nodes[i + 1];
           if (nextNode &&
               nextNode.opType === 'Relu' &&
               node.outputs[0] === nextNode.inputs[0]) {
@@ -409,7 +409,7 @@ export class NNModel {
 
           opType = this._nn.FULLY_CONNECTED;
 
-          let nextNode = this._subgraph.nodes[i + 1];
+          let nextNode = this._graph.nodes[i + 1];
           if (nextNode &&
               nextNode.opType === 'Relu' &&
               node.outputs[0] === nextNode.inputs[0]) {
@@ -571,6 +571,12 @@ export class NNModel {
 
           opType = this._nn.CONCATENATION;
         } break;
+        case 'Dropout': {
+          // bypass Dropout node
+          const input = handler.getTensor(node.inputs[0]);
+          handler.setTensor(node.outputs[0], input);
+          continue;
+        };
         case 'GlobalAveragePool': {
           const input = handler.getTensor(node.inputs[0]);
           inputs.push(this._getNNTensorId(node.inputs[0]));
@@ -663,7 +669,8 @@ export class NNModel {
     }, tensor);
   }
 
-  private _subgraph: NNSubgraphOp;
+  private _nn: NeuralNetworkContext;
+  private _graph: WebNNGraphOp;
   private _operandIndex: number;
   private _onnxIdToNNId: Map<number, number>;
   private _model: Model;

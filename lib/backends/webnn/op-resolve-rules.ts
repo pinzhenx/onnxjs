@@ -2,11 +2,11 @@
 // Licensed under the MIT license.
 
 import {OpSet} from '../../opset';
-import {NNSubgraphOp} from './nn-subgraph-op';
-import {NNSubgraphNode} from './nn-subgraph-node';
+import {WebNNGraphOp} from './webnn-graph-op';
+import {WebNNGraphNode} from './webnn-graph-node';
 
 export const WEBNN_OP_RESOLVE_RULES: ReadonlyArray<OpSet.ResolveRule> = [
-  ['NNSubgraph', '', '1+', (node) => new NNSubgraphOp(node as NNSubgraphNode)],
+  ['WebNNGraph', '', '1+', (node) => new WebNNGraphOp(node as WebNNGraphNode)],
 ];
 
 export const WEBNN_SUPPORTED_OPS: ReadonlyArray<string> = [
@@ -22,5 +22,6 @@ export const WEBNN_SUPPORTED_OPS: ReadonlyArray<string> = [
   'Mul',
   'Sum',
   'Gemm',
-  'Reshape'
+  'Reshape',
+  'Dropout', // keep uncommented to prevent Graph.finalizeGraph() from breaking the whole graph
 ];

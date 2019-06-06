@@ -1,6 +1,5 @@
 export interface NNNavigator extends Navigator {
   ml: {
-    isPolyfill: boolean | undefined;
     getNeuralNetworkContext: () => NeuralNetworkContext;
   }
 }

@@ -53,12 +53,13 @@ export declare namespace Graph {
     removeAllDropoutNodes(): void;
     // TODO: add generic functions to manipulate the graph
     setNodes(nodes: Graph.Node[]): void;
+    setValues(values: Graph.Value[]): void;
     getInputIndices(): ReadonlyArray<number>;
-    getInputNames(): ReadonlyArray<string>;
     getOutputIndices(): ReadonlyArray<number>;
-    getOutputNames(): ReadonlyArray<string>;
     getValues(): ReadonlyArray<Graph.Value>;
     getNodes(): ReadonlyArray<Graph.Node>;
+    makeNewValue(from: number, to: number[], tensor: Tensor|undefined,
+                 type: Graph.ValueType|undefined): Graph.Value;
   }
 
   // an initializer can use transformer to transform the graph
@@ -179,6 +180,20 @@ class GraphImpl implements Graph, Graph.Transformer {
   setNodes(nodes: Node[]) {
     this._nodes = nodes;
   };
+
+  setValues(values: Value[]) {
+    this._allData = values;
+  }
+
+  makeNewValue(from: number, to: number[], tensor: Tensor, type: Graph.ValueType) {
+    const v = new Value();
+    v._from = from;
+    v._to = to;
+    v.tensor = tensor;
+    v.type = type;
+    return v;
+  }
+
   private buildGraph(graph: onnx.IGraphProto) {
     const dataIndices = new Map<string, number>();
     this._allData = [];
