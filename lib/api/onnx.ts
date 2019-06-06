@@ -53,6 +53,13 @@ export declare namespace Backend {
     initTimeout?: number;
   }
 
+  interface WebNNOptions extends BackendOptions {
+    /**
+     * set or get the WebNN backend preference name
+     */
+    prefer?: 'fast'|'sustained'|'low';
+  }
+
   /**
    * represent all backend settings
    */
@@ -70,6 +77,7 @@ export declare namespace Backend {
     cpu: CpuOptions;
     webgl: WebGLOptions;
     wasm: WasmOptions;
+    webnn: WebNNOptions;
 
     /**
      * set options for the specific backend

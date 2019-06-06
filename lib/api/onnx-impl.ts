@@ -4,6 +4,7 @@
 import {CpuBackend} from '../backends/backend-cpu';
 import {WasmBackend} from '../backends/backend-wasm';
 import {WebGLBackend} from '../backends/backend-webgl';
+import {WebNNBackend} from '../backends/backend-webnn';
 
 import {Environment} from './env';
 import {envImpl} from './env-impl';
@@ -17,7 +18,8 @@ export * from './inference-session';
 export const backend: Backend = {
   cpu: new CpuBackend(),
   wasm: new WasmBackend(),
-  webgl: new WebGLBackend()
+  webgl: new WebGLBackend(),
+  webnn: new WebNNBackend()
 };
 
 export const ENV: Environment = envImpl;

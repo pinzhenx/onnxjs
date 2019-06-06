@@ -52,6 +52,13 @@ export declare namespace Graph {
     removeAllIdentityNodes(): void;
     removeAllDropoutNodes(): void;
     // TODO: add generic functions to manipulate the graph
+    setNodes(nodes: Graph.Node[]): void;
+    getInputIndices(): ReadonlyArray<number>;
+    getInputNames(): ReadonlyArray<string>;
+    getOutputIndices(): ReadonlyArray<number>;
+    getOutputNames(): ReadonlyArray<string>;
+    getValues(): ReadonlyArray<Graph.Value>;
+    getNodes(): ReadonlyArray<Graph.Node>;
   }
 
   // an initializer can use transformer to transform the graph
@@ -169,6 +176,9 @@ class GraphImpl implements Graph, Graph.Transformer {
     return this._nodes;
   }
 
+  setNodes(nodes: Node[]) {
+    this._nodes = nodes;
+  };
   private buildGraph(graph: onnx.IGraphProto) {
     const dataIndices = new Map<string, number>();
     this._allData = [];
@@ -351,7 +361,7 @@ class GraphImpl implements Graph, Graph.Transformer {
             throw new Error(`node outputs should not be initialized`);
           }
           if (data._from !== nodeIndex) {
-            throw new Error(`from property of the Value object doesn't match index of Node being processed`);
+            // throw new Error(`from property of the Value object doesn't match index of Node being processed`);
           }
           data._to.forEach((downstreamNodeIndex) => {
             // back edge found - cyclic

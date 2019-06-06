@@ -379,6 +379,50 @@ export class LongUtil {
   }
 }
 
+export class TensorUtil {
+  static toNHWC(tensor: Tensor): Tensor {
+    if (tensor.dims.length !== 4) {
+      return tensor;
+    } else {
+      const [N, C, H, W] = Array.from(tensor.dims);
+      const nhwcDims = [N, H, W, C];
+      const nchwData = tensor.data;
+      const nhwcData = nchwData.slice(0); // TODO: prevent copying
+      for (let n = 0; n < N; ++n) {
+        for (let c = 0; c < C; ++c) {
+          for (let h = 0; h < H; ++h) {
+            for (let w = 0; w < W; ++w) {
+              nhwcData[n*H*W*C + h*W*C + w*C + c] = nchwData[n*C*H*W + c*H*W + h*W + w];
+            }
+          }
+        }
+      }
+      return new Tensor(nhwcDims, tensor.type, undefined, undefined, nhwcData);
+    }
+  }
+
+  static toNCHW(tensor: Tensor): Tensor {
+    if (tensor.dims.length !== 4) {
+      return tensor;
+    } else {
+      const [N, H, W, C] = Array.from(tensor.dims);
+      const nchwDims = [N, C, H, W];
+      const nhwcData = tensor.data;
+      const nchwData = nhwcData.slice(0); // TODO: prevent copying
+      for (let n = 0; n < N; ++n) {
+        for (let c = 0; c < C; ++c) {
+          for (let h = 0; h < H; ++h) {
+            for (let w = 0; w < W; ++w) {
+              nchwData[n*C*H*W + c*H*W + h*W + w] = nhwcData[n*H*W*C + h*W*C + w*C + c];
+            }
+          }
+        }
+      }
+      return new Tensor(nchwDims, tensor.type, undefined, undefined, nchwData);
+    }
+  }
+}
+
 export class ShapeUtil {
   static size(dims: ReadonlyArray<number>): number {
     return ShapeUtil.getSizeFromDimensionRange(dims, 0, dims.length);
